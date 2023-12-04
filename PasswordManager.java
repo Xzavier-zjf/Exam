@@ -3,7 +3,7 @@ public class PasswordManager {
 
     public static String encrypt(String password) {
         StringBuilder encrypted_password = new StringBuilder();
-//111
+//11111
         // 将每个字符的ASCII码加上它在字符串中的位置(1开始)和偏移值3
         for (int i = 0; i < password.length(); i++) {
             char ch = (char) (password.charAt(i) + i + 1 + 3);
