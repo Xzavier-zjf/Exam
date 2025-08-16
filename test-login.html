@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>登录测试</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>考试座位管理系统 - 登录测试</h1>
+    
+    <div>
+        <h2>测试步骤：</h2>
+        <ol>
+            <li>点击下面的链接访问登录页面</li>
+            <li>使用以下凭据登录：
+                <ul>
+                    <li>用户名: admin</li>
+                    <li>密码: admin123</li>
+                </ul>
+            </li>
+            <li>登录成功后应该跳转到仪表板页面</li>
+        </ol>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <a href="http://localhost:8080/auth/login" target="_blank" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+            访问登录页面
+        </a>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <a href="http://localhost:8080/dashboard" target="_blank" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">
+            直接访问仪表板（需要已登录）
+        </a>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <a href="http://localhost:8080/test" target="_blank" style="padding: 10px 20px; background-color: #ffc107; color: black; text-decoration: none; border-radius: 5px;">
+            访问测试页面（查看认证信息）
+        </a>
+    </div>
+    
+    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <h3>故障排除信息：</h3>
+        <ul>
+            <li>如果登录失败，请检查数据库连接</li>
+            <li>如果跳转到错误页面，请检查Spring Security配置</li>
+            <li>如果页面无法访问，请检查应用程序是否正在运行</li>
+        </ul>
+    </div>
+</body>
+</html>

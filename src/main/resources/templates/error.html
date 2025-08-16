@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错误页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        }
+        .error-message {
+            font-size: 24px;
+            color: red;
+            margin-bottom: 20px;
+        }
+        .back-button {
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="error-message" id="error-message">
+        <span th:text="${errorMessage ?: '发生未知错误'}">发生未知错误</span>
+    </div>
+    <button class="back-button" onclick="window.location.href='/exam'">返回考试页面</button>
+</div>
+<script th:if="${errorMessage == null}">
+    // 如果没有从服务器获取到错误信息，则尝试从URL参数获取
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorMessage = urlParams.get('message') || "发生未知错误";
+    document.getElementById('error-message').textContent = errorMessage;
+</script>
+</body>
+</html>

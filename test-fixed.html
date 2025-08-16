@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>功能测试 - 考试座位管理系统</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
+        .test-button:hover { background-color: #0056b3; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>考试座位管理系统 - 功能测试</h1>
+    
+    <div class="test-section info">
+        <h2>✅ 已修复的问题</h2>
+        <ul>
+            <li>数据库角色字段不匹配 - 已修正admin用户角色为ROLE_ADMIN</li>
+            <li>AdminController权限问题 - 已添加@PreAuthorize注解</li>
+            <li>SystemSettingService依赖问题 - 已初始化系统设置数据</li>
+            <li>异常处理器优化 - 避免捕获认证相关异常</li>
+        </ul>
+    </div>
+    
+    <div class="test-section success">
+        <h2>🧪 测试步骤</h2>
+        <ol>
+            <li>首先使用admin/admin123登录系统</li>
+            <li>登录成功后测试以下功能</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 基础功能测试</h3>
+        <a href="http://localhost:8080/auth/login" target="_blank" class="test-button">登录页面</a>
+        <a href="http://localhost:8080/dashboard" target="_blank" class="test-button">仪表板</a>
+        <a href="http://localhost:8080/test" target="_blank" class="test-button">认证测试</a>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 管理员功能测试</h3>
+        <a href="http://localhost:8080/admin" target="_blank" class="test-button">编排座位</a>
+        <a href="http://localhost:8080/users/list" target="_blank" class="test-button">用户管理</a>
+        <a href="http://localhost:8080/admin/settings" target="_blank" class="test-button">系统设置</a>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 用户功能测试</h3>
+        <a href="http://localhost:8080/users/profile" target="_blank" class="test-button">个人资料</a>
+        <a href="http://localhost:8080/users/change-password" target="_blank" class="test-button">修改密码</a>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 考试功能测试</h3>
+        <a href="http://localhost:8080/exam" target="_blank" class="test-button">考试信息</a>
+        <a href="http://localhost:8080/seats" target="_blank" class="test-button">座位查看</a>
+    </div>
+    
+    <div class="test-section warning">
+        <h3>⚠️ 预期结果</h3>
+        <ul>
+            <li>所有链接都应该能正常访问，不再跳转到错误页面</li>
+            <li>编排座位页面应该显示座位编排界面</li>
+            <li>个人资料页面应该显示用户信息</li>
+            <li>如果出现权限错误，说明需要管理员权限</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔧 故障排除</h3>
+        <p>如果仍然有问题：</p>
+        <ul>
+            <li>检查应用程序是否正在运行：<code>netstat -ano | findstr :8080</code></li>
+            <li>检查数据库连接：<code>mysql -u root -p123456 -e "USE exam; SELECT username, role FROM users WHERE username='admin';"</code></li>
+            <li>重启应用程序：<code>mvn spring-boot:run</code></li>
+        </ul>
+    </div>
+    
+    <div class="test-section info">
+        <h3>📊 当前状态</h3>
+        <ul>
+            <li>应用程序PID: 22744</li>
+            <li>端口: 8080</li>
+            <li>数据库: 已连接</li>
+            <li>系统设置: 已初始化</li>
+            <li>用户权限: 已修正</li>
+        </ul>
+    </div>
+</body>
+</html>

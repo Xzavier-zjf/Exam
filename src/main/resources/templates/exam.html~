@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试信息页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header .time {
+            font-size: 120px;
+            font-weight: bold;
+            color: #010d1a;
+        }
+        .header .now {
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: #007BFF;
+            color: white;
+        }
+        .buttons {
+            display: flex;
+            gap: 20px;
+        }
+        .buttons button {
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .buttons button:hover {
+            background-color: #0056b3;
+        }
+        .buttons button:focus {
+            outline: 3px solid #ffcc00;
+            outline-offset: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+        table th, table td {
+            border: 2px solid #ddd;
+            padding: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        ul {
+            text-align: left;
+            font-size: 20px;
+            line-height: 2;
+            margin-bottom: 40px;
+        }
+        ul li {
+            margin-bottom: 15px;
+        }
+        .exam-notice {
+            text-align: left;
+            font-size: 22px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
+        .exam-notice span {
+            font-weight: bold;
+        }
+        .exam-notice .bule {
+            color: #007BFF;
+        }
+        .exam-notice .red {
+            color: red;
+        }
+        .footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+        .footer img {
+            height: 200px;
+            object-fit: contain;
+        }
+    </style>
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateTime, 1000);
+
+        function toggleCustomTime(selectElement) {
+            var customInput = document.getElementById('custom-time-input');
+            if (selectElement.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+            }
+            fetchExamData(); // 在选择自定义时间后立即调用 fetchExamData
+        }
+
+        function openSeatChart() {
+            const examSubject = document.querySelector('input[name="subject"]').value.trim();
+            const examRoom = document.querySelector('input[name="room"]').value.trim();
+            const examTimeSelect = document.querySelector('select[name="defaultTime"]');
+            const customTimeInput = document.getElementById('custom-time-input');
+            const examTime = examTimeSelect.value === 'custom' ? customTimeInput.value.trim() : examTimeSelect.value.trim();
+            const examDate = document.getElementById("examDate").value;
+
+            // 输入验证
+            if (!examSubject) {
+                alert("请输入考试科目！");
+                document.querySelector('input[name="subject"]').focus();
+                return;
+            }
+
+            if (!examRoom) {
+                alert("请输入考试试室！");
+                document.querySelector('input[name="room"]').focus();
+                return;
+            }
+
+            if (!examTime) {
+                alert("请选择考试时间！");
+                return;
+            }
+
+            if (!examDate) {
+                alert("请输入考试日期！");
+                return;
+            }
+
+            // 保存表单数据到 sessionStorage
+            const formData = {
+                subject: examSubject,
+                room: examRoom,
+                defaultTime: examTimeSelect.value,
+                customTime: customTimeInput.value,
+                examDate: examDate,
+                examType: document.querySelector('select[name="examType"]').value,
+                notes: document.getElementById("notes").value
+            };
+            sessionStorage.setItem('examFormData', JSON.stringify(formData));
+
+            // 构建查询参数并跳转
+            window.location.href = `/exam/seats?room=${encodeURIComponent(examRoom)}&subject=${encodeURIComponent(examSubject)}&start_end_time=${encodeURIComponent(examTime)}&date=${encodeURIComponent(examDate)}`;
+        }
+
+        function loadFormData() {
+            // 从 sessionStorage 加载表单数据
+            const formData = JSON.parse(sessionStorage.getItem('examFormData'));
+            if (formData) {
+                document.querySelector('input[name="subject"]').value = formData.subject;
+                document.querySelector('input[name="room"]').value = formData.room;
+                document.querySelector('select[name="defaultTime"]').value = formData.defaultTime;
+                document.getElementById('custom-time-input').value = formData.customTime;
+                document.getElementById('examDate').value = formData.examDate;
+                document.querySelector('select[name="examType"]').value = formData.examType;
+                document.getElementById('notes').value = formData.notes;
+
+                // 如果选择了自定义时间，显示自定义时间输入框
+                if (formData.defaultTime === 'custom') {
+                    document.getElementById('custom-time-input').style.display = 'block';
+                }
+            }
+        }
+
+        function clearFormData() {
+            // 清除 sessionStorage 中的表单数据
+            sessionStorage.removeItem('examFormData');
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // 如果是重新登录，清除表单数据
+            if (performance.navigation.type === 1) { // 1 表示页面是重新加载的
+                clearFormData();
+            }
+
+            // 加载表单数据
+            loadFormData();
+
+            const roomInput = document.getElementById("room");
+            const examTimeSelect = document.getElementById("examTime");
+            const examDateInput = document.getElementById("examDate");
+            const customTimeInput = document.getElementById("custom-time-input");
+
+            if (roomInput && examTimeSelect && examDateInput) {
+                roomInput.addEventListener("input", fetchExamData);
+                examTimeSelect.addEventListener("change", fetchExamData);
+                examDateInput.addEventListener("change", fetchExamData);
+            } else {
+                console.error("无法找到 room、examTime 或 examDate 元素。");
+            }
+
+            if (customTimeInput) {
+                customTimeInput.addEventListener("input", fetchExamData);
+            }
+
+          // 获取考试数据
+            function fetchExamData() {
+                const room = document.getElementById("room").value;
+                const examTimeSelect = document.getElementById("examTime");
+                const customTimeInput = document.getElementById("custom-time-input");
+                const examTime = examTimeSelect.value === 'custom' ? customTimeInput.value.trim() : examTimeSelect.value.trim();
+                const examDate = document.getElementById("examDate").value;
+
+                if (room && examTime && examDate) {
+                    fetch(`/exam/data?room=${room}&timeRange=${examTime}&date=${examDate}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById("subject").value = data.subject || "无对应科目";
+                            document.getElementById("notes").value = data.notes || "无备注信息";
+                        })
+                        .catch(error => console.error("Error fetching exam data:", error));
+                }
+            }
+
+        });
+    </script>
+</head>
+<body onload="updateTime()">
+<div class="container">
+    <!-- 添加返回按钮 -->
+    <div style="text-align: left; margin-bottom: 20px;">
+        <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">返回</button>
+    </div>
+
+    <div class="header">
+        <div class="now">当前时间</div>
+        <div class="time" id="current-time" role="status" aria-live="polite">09:47:42</div>
+
+        <div class="buttons">
+            <button tabindex="0" onclick="openSeatChart()" aria-label="打开电子座位表页面">电子座位表</button>
+
+            <!-- 将“思政线上”按钮改为下拉列表 -->
+            <select name="examMode" style="font-size: 20px; padding: 15px 30px; border: none; border-radius: 10px; background-color: #007BFF; color: white; cursor: pointer;" onchange="handleExamModeChange(this)">
+                <option value="online">思政线上</option>
+                <option value="offline">线下</option>
+            </select>
+        </div>
+    </div>
+
+    <form id="examForm" action="/exam/save" method="post">
+        <table>
+            <tr>
+                <th>考试试室</th>
+                <th>
+                    <input type="text" id="room" name="room" style="font-size: 30px; padding: 10px; width: 90%; text-align: center" placeholder="请输入考试试室号" required>
+                </th>
+            </tr>
+            <tr>
+                <th>考试科目</th>
+                <th>
+                    <input type="text" id="subject" name="subject" style="font-size: 30px; padding: 10px; width: 90%; text-align: center" placeholder="请输入考试科目" required>
+                </th>
+            </tr>
+            <tr>
+                <th>考试日期</th>
+                <th>
+                    <input type="date" id="examDate" name="examDate" style="font-size: 30px; padding: 10px; width: 90%; text-align: center;" required>
+                </th>
+            </tr>
+            <tr>
+                <th>起止时间</th>
+                <th>
+                    <select id="examTime" name="defaultTime" style="font-size: 30px; padding: 10px;" onchange="toggleCustomTime(this)">
+                        <option>08:40 ~ 10:40</option>
+                        <option>09:00 ~ 11:00</option>
+                        <option>10:00 ~ 12:00</option>
+                        <option value="custom">自定义时间</option>
+                    </select>
+                    <input id="custom-time-input" name="customTime" type="text" style="font-size: 30px; padding: 10px; display: none;"
+                           placeholder="请输入时间格式如 08:00 ~ 10:00" pattern="^\d{2}:\d{2} ~ \d{2}:\d{2}$" title="时间格式应为 HH:mm ~ HH:mm">
+                </th>
+            </tr>
+
+            <tr>
+                <th>考试类型</th>
+                <th>
+                    <select name="examType" style="font-size: 30px; padding: 10px;">
+                        <option>闭卷</option>
+                        <option>开卷</option>
+                    </select>
+                </th>
+            </tr>
+        </table>
+
+        <div class="exam-notice">
+            <p>• 考生必须自觉服从监考老师管理，不得扰乱考场秩序；</p>
+            <p>• 考生凭 <span class="bule">学生证</span>，按规定时间、规定教室、规定的<span class="bule">座位号</span>参加考试；</p>
+            <p>• 考生入场之后，考桌上只允许摆放 <span class="bule">学生证</span> 及答题相关的工具，其他物品统一放在讲台两侧；</p>
+            <p><span class="red">• </span>使用<span class="bule">通讯工具及其他工具</span><span class="red">器材通信、查阅、发送、接收考试相关内容的</span>，该门课程<span class="red">成绩无效</span>，并给予<span class="red">开除学籍处分；</span></p>
+            <p>• 考试过程中需保持安静,严守考试纪律,对于一切违反考试规定的行</p>
+            <p>• 将严格按照学校规定处理,考试结束后请安静离开考区; </p>
+            <p>• 信号屏蔽期间,<span class="red">应急事件处理联络处</span>:A2-206 A3-207。</p>
+        </div>
+        <div class="footer">
+            <textarea id="notes" name="notes" style="font-size: 30px; padding: 10px; width: 90%; text-align: center" placeholder="请输入备注"></textarea>
+        </div>
+        <button type="submit" style="padding: 15px 30px; font-size: 20px; border: none; border-radius: 10px; background-color: #007BFF; color: white; cursor: pointer;">保存</button>
+    </form>
+</div>
+</body>
+</html>

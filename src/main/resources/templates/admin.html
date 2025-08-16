@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试座位编排</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/js/error-handler.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        }
+        .title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .stage {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 10px;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr); /* 默认11列 */
+            gap: 10px;
+            justify-content: center;
+        }
+        .seat {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .seat .seat-number {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .seat.unavailable {
+            background-color: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .aisle {
+            grid-column: span 1;
+            background: transparent;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #007BFF;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group input {
+            width: 200px;
+            padding: 5px;
+            font-size: 16px;
+        }
+        .return-button {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .return-button .btn {
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 返回按钮 -->
+    <div class="return-button">
+        <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">返回</button>
+    </div>
+
+    <h1 class="text-center my-4">考试座位编排</h1>
+
+    <!-- 房间号输入 -->
+    <div class="text-center mb-3">
+        <label for="room">房间号: </label>
+        <input type="text" id="room" name="room" placeholder="请输入房间号" class="form-control" style="width: 200px; display: inline-block;">
+    </div>
+
+    <!-- 考试日期输入 -->
+    <div class="form-group">
+        <label for="examDate">考试日期：</label>
+        <input type="date" id="examDate" name="examDate" class="form-control" style="width: 200px; display: inline-block;">
+    </div>
+
+    <!-- 时间输入 -->
+    <div class="form-group">
+        <label for="startTime">起始时间：</label>
+        <input type="time" id="startTime" name="startTime">
+    </div>
+    <div class="form-group">
+        <label for="endTime">结束时间：</label>
+        <input type="time" id="endTime" name="endTime">
+    </div>
+
+    <!-- 导入座位表 -->
+    <div class="form-group">
+        <label for="file">导入座位表 (Excel): </label>
+        <input type="file" id="file" name="file" accept=".xlsx, .xls">
+        <button type="button" class="btn btn-primary" onclick="importSeats()">导入</button>
+    </div>
+
+    <!-- 座位表格 -->
+    <form id="seatForm">
+        <table class="seat-table" id="seatTable">
+            <thead>
+            <tr>
+                <th>座位编号</th>
+                <th>学生姓名</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 默认一行空数据 -->
+            <tr>
+                <td><input type="number" class="form-control" name="seatNumber" placeholder="座位编号"></td>
+                <td><input type="text" class="form-control" name="studentName" placeholder="学生姓名"></td>
+                <td><button type="button" class="btn btn-danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- 添加行按钮 -->
+        <div class="text-center add-row-button">
+            <button type="button" class="btn btn-secondary" onclick="addRow()">添加行</button>
+        </div>
+
+        <!-- 保存按钮 -->
+        <div class="text-center save-button">
+            <button type="button" class="btn btn-success" onclick="saveSeats()">保存</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // 添加一行空数据
+    function addRow() {
+        const tableBody = document.querySelector("#seatTable tbody");
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><input type="number" class="form-control" name="seatNumber" placeholder="座位编号"></td>
+            <td><input type="text" class="form-control" name="studentName" placeholder="学生姓名"></td>
+            <td><button type="button" class="btn btn-danger" onclick="deleteRow(this)">删除</button></td>
+        `;
+        tableBody.appendChild(row);
+    }
+
+    // 删除一行
+    function deleteRow(button) {
+        const row = button.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+    }
+
+    // 保存座位信息
+    async function saveSeats() {
+        const room = document.getElementById("room").value;
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+        const examDate = document.getElementById("examDate").value;
+
+        // 表单验证
+        const rules = {
+            room: { required: true, message: '请输入房间号' },
+            startTime: { required: true, message: '请输入起始时间' },
+            endTime: { required: true, message: '请输入结束时间' },
+            examDate: { required: true, message: '请选择考试日期' }
+        };
+
+        const formData = { room, startTime, endTime, examDate };
+        if (!ErrorHandler.validateForm(formData, rules)) {
+            return;
+        }
+
+        // 检查网络连接
+        if (!ErrorHandler.checkNetwork()) {
+            return;
+        }
+
+        // 获取表单中的座位数据
+        const tableBody = document.querySelector("#seatTable tbody");
+        const rows = tableBody.querySelectorAll("tr");
+        const seatData = [];
+        const seatNumbers = new Set();
+
+        for (const row of rows) {
+            const seatNumber = row.querySelector('input[name="seatNumber"]').value;
+            const studentName = row.querySelector('input[name="studentName"]').value;
+
+            if (seatNumber) {
+                if (seatNumbers.has(parseInt(seatNumber))) {
+                    ErrorHandler.showError("座位号 " + seatNumber + " 重复，请修改后再保存！");
+                    return;
+                }
+                seatNumbers.add(parseInt(seatNumber));
+                seatData.push({
+                    seatNumber: parseInt(seatNumber),
+                    studentName: studentName.trim()
+                });
+            }
+        }
+
+        if (seatData.length === 0) {
+            ErrorHandler.showError("请至少填写一个座位信息！");
+            return;
+        }
+
+        try {
+            await ErrorHandler.retry(() => axios.post('/admin/save', {
+                room: room,
+                startTime: startTime,
+                endTime: endTime,
+                examDate: examDate,
+                seats: seatData
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }));
+            ErrorHandler.showSuccess("座位信息保存成功！");
+        } catch (error) {
+            console.error('保存座位信息失败:', error);
+        }
+    }
+
+    async function importSeats() {
+        const room = document.getElementById("room").value;
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+        const examDate = document.getElementById("examDate").value;
+        const fileInput = document.getElementById("file");
+
+        // 表单验证
+        const rules = {
+            room: { required: true, message: '请输入房间号' },
+            startTime: { required: true, message: '请输入起始时间' },
+            endTime: { required: true, message: '请输入结束时间' },
+            examDate: { required: true, message: '请选择考试日期' }
+        };
+
+        const formData = { room, startTime, endTime, examDate };
+        if (!ErrorHandler.validateForm(formData, rules)) {
+            return;
+        }
+
+        if (!fileInput.files[0]) {
+            ErrorHandler.showError("请选择Excel文件！");
+            return;
+        }
+
+        if (!ErrorHandler.checkNetwork()) {
+            return;
+        }
+
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", fileInput.files[0]);
+        formDataUpload.append("room", room);
+        formDataUpload.append("startTime", startTime);
+        formDataUpload.append("endTime", endTime);
+        formDataUpload.append("examDate", examDate);
+
+        try {
+            const response = await ErrorHandler.retry(() => fetch("/admin/upload-seat-chart", {
+                method: "POST",
+                body: formDataUpload
+            }));
+
+            const result = await response.text();
+            if (response.ok) {
+                ErrorHandler.showSuccess(result);
+                window.location.reload();
+            } else {
+                ErrorHandler.showError(result);
+            }
+        } catch (error) {
+            console.error('导入座位表失败:', error);
+            ErrorHandler.showError("座位表导入失败，请检查文件内容是否有重复的座位编号！");
+        }
+    }
+</script>
+</body>
+</html>

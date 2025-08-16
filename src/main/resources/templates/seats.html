@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试电子座位表</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        }
+        .title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .stage {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 10px;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(11, 1fr); /* 默认11列 */
+            gap: 10px;
+            justify-content: center;
+        }
+        .seat {
+            width: 100%;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .seat .seat-number {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .seat.unavailable {
+            background-color: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .aisle {
+            grid-column: span 1;
+            background: transparent;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #007BFF;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="title">考试电子座位表</div>
+    <div class="stage">讲台</div>
+    <h2 th:text="'试室号: ' + ${room}"></h2>
+
+    <!-- 显示成功/错误消息 -->
+    <div th:if="${success}" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb; border-radius: 5px;">
+        <span th:text="${success}"></span>
+    </div>
+    
+    <div th:if="${error}" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px 0; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <span th:text="${error}"></span>
+    </div>
+
+    <!-- 如果没有座位信息 -->
+    <div th:if="${message}">
+        <p th:text="${message}"></p>
+    </div>
+
+    <div class="seat-grid">
+        <!-- 动态生成座位 -->
+        <div th:each="seat : ${seats}"
+             class="seat"
+             th:classappend="${!seat.available ? 'unavailable' : ''}">
+            <span class="seat-number" th:text="'座位 ' + ${seat.seatNumber}"></span>
+            <span th:text="${seat.studentName}" th:if="${seat.studentName != null}"></span>
+        </div>
+    </div>
+<div class="footer">
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+            <!-- 导出Excel按钮 -->
+            <a th:href="@{/exam/export-seats(room=${room},timeRange=${startEndTime},date=${examDate})}" 
+               class="btn btn-primary" style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">
+                导出Excel
+            </a>
+            
+            <!-- 导入Excel按钮和表单 -->
+            <button type="button" onclick="document.getElementById('import-form').style.display='block'" 
+                    style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                导入Excel
+            </button>
+            
+            <!-- 返回按钮 -->
+            <button class="btn btn-secondary" onclick="window.location.href='/exam'" 
+                    style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                返回
+            </button>
+        </div>
+        
+        <!-- 导入Excel的表单，默认隐藏 -->
+        <div id="import-form" style="display: none; margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+            <h3>导入座位信息</h3>
+            <form th:action="@{/exam/import-seats}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="room" th:value="${room}">
+                <input type="hidden" name="timeRange" th:value="${startEndTime}">
+                <input type="hidden" name="date" th:value="${examDate}">
+                <input type="hidden" name="subject" th:value="${subject}">
+                
+                <div style="margin-bottom: 10px;">
+                    <label for="file">选择Excel文件：</label>
+                    <input type="file" id="file" name="file" accept=".xlsx,.xls" required>
+                </div>
+                
+                <div>
+                    <button type="submit" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        上传并导入
+                    </button>
+                    <button type="button" onclick="document.getElementById('import-form').style.display='none'" 
+                            style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+                        取消
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

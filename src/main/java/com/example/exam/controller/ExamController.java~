@@ -1,0 +1,246 @@
+package com.example.exam.controller;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.example.exam.DTO.ExamSeatDTO;
+import com.example.exam.model.Exam;
+import com.example.exam.Service.ExamService;
+import com.example.exam.Service.SeatService;
+import com.example.exam.model.Seat;
+import com.example.exam.respository.ExamRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@Controller
+@RequestMapping("/exam")
+public class ExamController {
+
+    @Autowired
+    private ExamService examService;
+
+    @Autowired
+    private SeatService seatService;
+
+    @Autowired
+    private ExamRepository examRepository;
+
+    @GetMapping
+    public String getExamPage(Model model) {
+        return "exam"; // 返回 exam.html
+    }
+
+    @GetMapping("/seats")
+    public String getSeatsByRoom(
+            @RequestParam("room") String room,
+            @RequestParam("start_end_time") String startEndTime,
+            @RequestParam("subject") String subject,
+            @RequestParam("date") String date,
+            Model model) {
+        // 解析起止时间
+        String[] times = startEndTime.split(" ~ ");
+        if (times.length != 2) {
+            model.addAttribute("message", "时间格式不正确！");
+            return "seats";
+        }
+
+        // 解析日期
+        LocalDate examDate;
+        try {
+            examDate = LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            model.addAttribute("message", "日期格式不正确！");
+            return "seats";
+        }
+
+        // 解析起止时间
+        LocalTime startTime;
+        LocalTime endTime;
+        try {
+            startTime = LocalTime.parse(times[0].trim());
+            endTime = LocalTime.parse(times[1].trim());
+        } catch (DateTimeParseException e) {
+            model.addAttribute("message", "时间格式不正确！");
+            return "seats";
+        }
+
+        // 调用服务层方法，根据 room、startTime、endTime 和 examDate 获取座位信息
+        List<Seat> seats = seatService.getSeatsByRoom(room, startTime, endTime, examDate, subject);
+
+        if (seats.isEmpty()) {
+            model.addAttribute("message", "该试室在指定时间内暂无考生信息！");
+        } else {
+            model.addAttribute("seats", seats);
+        }
+
+        model.addAttribute("room", room);
+        model.addAttribute("startEndTime", startEndTime);
+        model.addAttribute("subject", subject);
+        model.addAttribute("examDate", examDate);
+
+        // 返回 seats.html 页面
+        return "seats";
+    }
+
+    /*@PostMapping("/save")
+    public String saveExam(@RequestParam("subject") String subject,
+                           @RequestParam("room") String room,
+                           @RequestParam("examType") String examType,
+                           @RequestParam("defaultTime") String defaultTime,
+                           @RequestParam(value = "customTime", required = false) String customTime,
+                           @RequestParam(value = "examDate", required = false) String examDate,
+                           @RequestParam(value = "notes", required = false) String notes) {
+        String timeRange = (customTime != null && !customTime.isEmpty()) ? customTime : defaultTime;
+        String[] times = timeRange.split(" ~ ");
+        if (times.length == 2 && examDate != null && !examDate.isEmpty()) {
+            try {
+                // 解析时间段
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+                LocalTime startTime = LocalTime.parse(times[0].trim(), timeFormatter);
+                LocalTime endTime = LocalTime.parse(times[1].trim(), timeFormatter);
+
+                // 解析日期
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate examLocalDate = LocalDate.parse(examDate.trim(), dateFormatter);
+
+                // 构建 Exam 对象
+                Exam exam = new Exam();
+                exam.setSubject(subject);
+                exam.setRoom(room);
+                exam.setExamType(examType);
+                exam.setStartEndTime(timeRange);
+                exam.setStartTime(startTime);
+                exam.setEndTime(endTime);
+                exam.setExamDate(examLocalDate);
+                exam.setNotes(notes);
+
+                // 保存考试信息
+                examService.saveExam(exam);
+            } catch (DateTimeParseException e) {
+                return "redirect:/error";
+            }
+        } else {
+            return "redirect:/error";
+        }
+
+        return "redirect:/exam";
+    }*/
+    @PostMapping("/save")
+    public String saveExam(@RequestParam("subject") String subject,
+                           @RequestParam("room") String room,
+                           @RequestParam("examType") String examType,
+                           @RequestParam("defaultTime") String defaultTime,
+                           @RequestParam(value = "customTime", required = false) String customTime,
+                           @RequestParam(value = "examDate", required = false) String examDate,
+                           @RequestParam(value = "notes", required = false) String notes) {
+        String timeRange = (customTime != null && !customTime.isEmpty()) ? customTime : defaultTime;
+        String[] times = timeRange.split(" ~ ");
+        if (times.length == 2 && examDate != null && !examDate.isEmpty()) {
+            try {
+                // 解析时间段
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+                LocalTime startTime = LocalTime.parse(times[0].trim(), timeFormatter);
+                LocalTime endTime = LocalTime.parse(times[1].trim(), timeFormatter);
+
+                // 解析日期
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate examLocalDate = LocalDate.parse(examDate.trim(), dateFormatter);
+
+                // 检查是否已经存在相同的考试信息
+                Optional<Exam> existingExam = examRepository.findByRoomAndStartTimeAndEndTimeAndExamDate(room, startTime, endTime, examLocalDate);
+                if (existingExam.isPresent()) {
+                    return "redirect:/exam?error=考试信息已存在";
+                }
+
+                // 构建 Exam 对象
+                Exam exam = new Exam();
+                exam.setSubject(subject);
+                exam.setRoom(room);
+                exam.setExamType(examType);
+                exam.setStartEndTime(timeRange);
+                exam.setStartTime(startTime);
+                exam.setEndTime(endTime);
+                exam.setExamDate(examLocalDate);
+                exam.setNotes(notes);
+
+                // 保存考试信息
+                examService.saveExam(exam);
+            } catch (DateTimeParseException e) {
+                return "redirect:/error";
+            }
+        } else {
+            return "redirect:/error";
+        }
+
+        return "redirect:/exam";
+    }
+
+    @GetMapping("/data")
+    @ResponseBody
+    public ResponseEntity<?> getExamData(
+            @RequestParam("room") String room,
+            @RequestParam("timeRange") String timeRange,
+            @RequestParam("date") String date) { // 新增日期参数
+        try {
+            // 从 timeRange 拆分起始时间和结束时间
+            String[] times = timeRange.split(" ~ ");
+            if (times.length != 2) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "error", "时间范围格式错误"
+                ));
+            }
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            LocalTime startTime = LocalTime.parse(times[0].trim(), timeFormatter);
+            LocalTime endTime = LocalTime.parse(times[1].trim(), timeFormatter);
+
+            // 解析日期
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate examDate = LocalDate.parse(date.trim(), dateFormatter);
+
+            // 从数据库查询对应 room、timeRange 和 date 的考试信息
+            ExamSeatDTO examDTO = examService.getExamDetails(room, startTime, endTime, examDate);
+            if (examDTO != null) {
+                // 返回查询结果
+                Map<String, String> response = new HashMap<>();
+                response.put("subject", examDTO.getSubject());
+                response.put("notes", examDTO.getNotes());
+                return ResponseEntity.ok(response);
+            } else {
+                // 没有找到匹配的考试信息
+                return ResponseEntity.status(404).body(Map.of(
+                        "error", "未找到匹配的考试信息"
+                ));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 服务器内部错误
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "服务器内部错误，请稍后再试"
+            ));
+        }
+    }
+
+
+    // 手动编排座位
+    @PostMapping("/seats/manual")
+    public String manualSeatArrangement(@RequestParam String room, @RequestParam Map<String, String> seatAssignments) {
+        seatService.manualSeatArrangement(room, seatAssignments);
+        return "redirect:/exam/seats/" + room;
+    }
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+
+
+}
